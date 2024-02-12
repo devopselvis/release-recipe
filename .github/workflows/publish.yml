@@ -103,6 +103,8 @@ jobs:
         id: get-service-url
         run: |
           IP=$(kubectl describe service $SERVICE_NAME| grep "LoadBalancer Ingress: " | awk '{print $3}')
+          echo "IP"
+          echo $IP
           echo "SERVICE_URL=http://$IP" >> $GITHUB_OUTPUT
     
       - name: 'Run smoke test'

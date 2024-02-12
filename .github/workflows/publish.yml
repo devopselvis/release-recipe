@@ -62,56 +62,56 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  production:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    environment: 
-      name: Production
-      url: ${{ steps.get-service-url.outputs.SERVICE_URL}}
+  # production:
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   needs: build-and-push-image
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   environment: 
+  #     name: Production
+  #     url: ${{ steps.get-service-url.outputs.SERVICE_URL}}
     
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
       
-      - name: 'Az CLI login'
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #     - name: 'Az CLI login'
+  #       uses: azure/login@v1
+  #       with:
+  #         client-id: ${{ secrets.AZURE_CLIENT_ID }}
+  #         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+  #         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - run: az account show
+  #     - run: az account show
 
-      - name: 'Az CLI set AKS context'
-        uses: azure/aks-set-context@v3
-        with:
-          cluster-name: ${{ secrets.AZURE_CLUSTER_NAME }}
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  #     - name: 'Az CLI set AKS context'
+  #       uses: azure/aks-set-context@v3
+  #       with:
+  #         cluster-name: ${{ secrets.AZURE_CLUSTER_NAME }}
+  #         resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
       
-      - name: Deploy
-        env:
-          IMAGE: ${{ needs.build-and-push-image.outputs.image_tag }}
-        run: |-
-          envsubst < service.yml | kubectl apply -f -
-          envsubst < deployment.yml | kubectl apply -f -
+  #     - name: Deploy
+  #       env:
+  #         IMAGE: ${{ needs.build-and-push-image.outputs.image_tag }}
+  #       run: |-
+  #         envsubst < service.yml | kubectl apply -f -
+  #         envsubst < deployment.yml | kubectl apply -f -
    
-      - name: 'Get Service URL'
-        id: get-service-url
-        run: |
-          IP=$(kubectl describe service $SERVICE_NAME| grep "LoadBalancer Ingress: " | awk '{print $3}')
-          echo "SERVICE_URL=http://$IP" >> $GITHUB_OUTPUT
+  #     - name: 'Get Service URL'
+  #       id: get-service-url
+  #       run: |
+  #         IP=$(kubectl describe service $SERVICE_NAME| grep "LoadBalancer Ingress: " | awk '{print $3}')
+  #         echo "SERVICE_URL=http://$IP" >> $GITHUB_OUTPUT
       
-      - name: 'Run smoke test'
-        env:
-          SERVICE_URL: ${{ steps.get-service-url.outputs.SERVICE_URL}}
-        run: |
-          status=`curl -s --head $SERVICE_URL | head -1 | cut -f 2 -d' '`
-          if [ "$status" != "200" ]
-          then
-            echo "Wrong HTTP Status. Actual: '$status'"
-            exit 1
-          fi
+  #     - name: 'Run smoke test'
+  #       env:
+  #         SERVICE_URL: ${{ steps.get-service-url.outputs.SERVICE_URL}}
+  #       run: |
+  #         status=`curl -s --head $SERVICE_URL | head -1 | cut -f 2 -d' '`
+  #         if [ "$status" != "200" ]
+  #         then
+  #           echo "Wrong HTTP Status. Actual: '$status'"
+  #           exit 1
+  #         fi
